@@ -10,11 +10,13 @@ const progress = $(".progress");
 const nextBtn = $(".btn-next");
 const prevBtn = $(".btn-prev");
 const randomBtn = $(".btn-random");
-
+const repeatBtn =$('.btn-repeat')
+const playlist= $(".playlist")
 const app = {
   currentIndex: 0,
   isPlaying: false,
   isRandom: false,
+  isRepeat:false,
   songs: [
     {
       name: "Click Pow Get Down",
@@ -45,9 +47,9 @@ const app = {
   ],
 
   render: function () {
-    const htmls = this.songs.map((song) => {
+    const htmls = this.songs.map((song,index) => {
       return `
-        <div class="song">
+        <div class="song ${index===this.currentIndex?'active':''}" data-index="${index}">
             <div class="thumb" style="background-image: url('${song.image}')">
             </div>
             <div class="body">
@@ -115,19 +117,15 @@ const app = {
     audio.ontimeupdate = function () {
       // console.log(audio.currentTime/audio.duration*100)
       if (audio.duration) {
-        const progressPercent = Math.floor(
-          (audio.currentTime / audio.duration) * 100
-        );
+        const progressPercent = Math.floor((audio.currentTime / audio.duration) * 100);
         progress.value = progressPercent;
       }
     };
     //  Xử lý khi tua song
     progress.onchange = function (e) {
-      var seekTime = audio.duration / 100 * e.target.value;
+      const seekTime = (audio.duration / 100) * e.target.value;
       audio.currentTime = seekTime;
-      console.log(audio.currentTime)
-    };
-
+    }
     // Khi nhẫn next
     nextBtn.onclick = function () {
       if (_this.isRandom) {
@@ -136,6 +134,8 @@ const app = {
         _this.nextSong();
       }
       audio.play();
+      _this.render()
+      _this.scrollToActiveSong();
     };
     //  Khi nhấn prev
     prevBtn.onclick = function () {
@@ -151,6 +151,38 @@ const app = {
       _this.isRandom = !_this.isRandom;
       randomBtn.classList.toggle("active", _this.isRandom);
     };
+     //  Khi nhân phát lại
+     repeatBtn.onclick = function () {
+      _this.isRepeat = !_this.isRepeat;
+      repeatBtn.classList.toggle("active", _this.isRepeat);
+    };
+
+    audio.onended=function(){
+      if(_this.isRepeat){
+audio.play();
+      }else{
+        nextBtn.onclick()
+      }
+    }
+// Lắng nghe click vào playlist
+    playlist.onclick=function(e){
+      const songNode=e.target.closest('.song:not(.active)');
+      // Nếu nó không active và và là option thì
+      if(songNode||e.target.closest('.option')){
+        if(songNode){
+          console.log(songNode.getAttribute('data-index'))
+          
+        }
+          //Xử lý khi click vào song
+      } 
+          //Xử lý khi click vào option
+      else{
+
+
+      }
+        
+
+    }
   },
   loadCurrentSong: function () {
     heading.textContent = this.currentSong.name;
@@ -180,6 +212,13 @@ const app = {
     } while (this.currentIndex ===  newIndex);
     this.currentIndex = newIndex;
     this.loadCurrentSong();
+  },
+  scrollToActiveSong:function(){
+    setTimeout(()=> $('.song.active').scrollIntoView({
+      behavior:'smooth',
+      block:'nearest'
+
+    }))
   },
   start: function () {
     //Định nghĩa các thuộc tính cho ob
