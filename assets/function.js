@@ -1,5 +1,8 @@
 const $ = document.querySelector.bind(document);
 const $$ = document.querySelectorAll.bind(document);
+
+const PLAYER_STORAGE_KEY='TOAN_PLAYER';
+
 const cd = $(".cd");
 const heading = $("header h2");
 const cdThumb = $(".cd-thumb");
@@ -10,46 +13,50 @@ const progress = $(".progress");
 const nextBtn = $(".btn-next");
 const prevBtn = $(".btn-prev");
 const randomBtn = $(".btn-random");
-const repeatBtn =$('.btn-repeat')
-const playlist= $(".playlist")
+const repeatBtn = $(".btn-repeat");
+const playlist = $(".playlist");
 const app = {
   currentIndex: 0,
   isPlaying: false,
   isRandom: false,
-  isRepeat:false,
+  isRepeat: false,
+  config:JSON.parse(localStorage.getItem(PLAYER_STORAGE_KEY))||{},
   songs: [
     {
-      name: "Click Pow Get Down",
+      name: "Home-Westlife",
       singer: "Raftaar x Fortnite",
-      path: "https://songs16.vlcmusic.com/download.php?track_id=45438&format=320",
+      path: "/assets/music/Home-Westlife.mp3",
       image: "https://i.ytimg.com/vi/jTLhQf5KJSc/maxresdefault.jpg",
     },
     {
-      name: "Tribute To Sidhu Moose Wala Sufi Balbir",
+      name: "Nothing gonna change my love on you",
       singer: "Raftaar x Salim Merchant x Karma",
-      path: "https://songs16.vlcmusic.com/download.php?track_id=45443&format=48",
+      path: "/assets/music/Nothing-gonna-change-my-love-on-you.mp3",
       image:
         "https://1.bp.blogspot.com/-kX21dGUuTdM/X85ij1SBeEI/AAAAAAAAKK4/feboCtDKkls19cZw3glZWRdJ6J8alCm-gCNcBGAsYHQ/s16000/Tu%2BAana%2BPhir%2BSe%2BRap%2BSong%2BLyrics%2BBy%2BRaftaar.jpg",
     },
     {
-      name: "Naachne Ka Shaunq",
+      name: "Sugar-Sam",
       singer: "Raftaar x Brobha V",
-      path: "https://songs16.vlcmusic.com/download.php?track_id=37890&format=48",
+      path: "/assets/music/Sugar-Sam-Tsui.mp3",
       image: "https://i.ytimg.com/vi/QvswgfLDuPg/maxresdefault.jpg",
     },
     {
-      name: "Mantoiyat",
+      name: "Try",
       singer: "Raftaar x Nawazuddin Siddiqui",
-      path: "https://songs16.vlcmusic.com/download.php?track_id=37701&format=48",
+      path: "/assets/music/Try-P-nk.mp3",
       image:
         "https://a10.gaanacdn.com/images/song/39/24225939/crop_480x480_1536749130.jpg",
     },
   ],
-
+  setConfig:function(key,value){
+    this.config[key]=value;
+    localStorage.setItem(PLAYER_STORAGE_KEY,JSON.stringify(this.config) )
+  },
   render: function () {
-    const htmls = this.songs.map((song,index) => {
+    const htmls = this.songs.map((song, index) => {
       return `
-        <div class="song ${index===this.currentIndex?'active':''}" data-index="${index}">
+        <div class="song ${index === this.currentIndex ? "active" : ""}" data-index="${index}">
             <div class="thumb" style="background-image: url('${song.image}')">
             </div>
             <div class="body">
@@ -59,10 +66,9 @@ const app = {
             <div class="option">
                 <i class="fas fa-ellipsis-h"></i>
             </div>
-        </div>
-      `;
+        </div>`;
     });
-    $(".playlist").innerHTML = htmls.join("\n");
+    $(".playlist").innerHTML = htmls.join("");
   },
   defineProperties: function () {
     // console.log(this);
@@ -117,7 +123,9 @@ const app = {
     audio.ontimeupdate = function () {
       // console.log(audio.currentTime/audio.duration*100)
       if (audio.duration) {
-        const progressPercent = Math.floor((audio.currentTime / audio.duration) * 100);
+        const progressPercent = Math.floor(
+          (audio.currentTime / audio.duration) * 100
+        );
         progress.value = progressPercent;
       }
     };
@@ -125,7 +133,7 @@ const app = {
     progress.onchange = function (e) {
       const seekTime = (audio.duration / 100) * e.target.value;
       audio.currentTime = seekTime;
-    }
+    };
     // Khi nhẫn next
     nextBtn.onclick = function () {
       if (_this.isRandom) {
@@ -134,7 +142,7 @@ const app = {
         _this.nextSong();
       }
       audio.play();
-      _this.render()
+      _this.render();
       _this.scrollToActiveSong();
     };
     //  Khi nhấn prev
@@ -145,50 +153,61 @@ const app = {
         _this.preSong();
       }
       audio.play();
+      _this.render();
+      _this.scrollToActiveSong();
     };
     //  Khi nhấn random bài bật tắt
     randomBtn.onclick = function () {
       _this.isRandom = !_this.isRandom;
+      _this.setConfig('isRandom',_this.isRandom)
       randomBtn.classList.toggle("active", _this.isRandom);
     };
-     //  Khi nhân phát lại
-     repeatBtn.onclick = function () {
+    //  Khi nhân phát lại
+    repeatBtn.onclick = function () {
       _this.isRepeat = !_this.isRepeat;
+      _this.setConfig('isRepeat',_this.isRepeat)
+
       repeatBtn.classList.toggle("active", _this.isRepeat);
     };
 
-    audio.onended=function(){
-      if(_this.isRepeat){
-audio.play();
-      }else{
-        nextBtn.onclick()
+    audio.onended = function () {
+      if (_this.isRepeat) {
+        audio.play();
+      } else {
+        nextBtn.onclick();
       }
-    }
-// Lắng nghe click vào playlist
-    playlist.onclick=function(e){
-      const songNode=e.target.closest('.song:not(.active)');
+    };
+    // Lắng nghe click vào playlist
+    playlist.onclick = function (e) {
+      const songNode = e.target.closest(".song:not(.active)");
+      const option = e.target.closest(".option");
       // Nếu nó không active và và là option thì
-      if(songNode||e.target.closest('.option')){
-        if(songNode){
-          console.log(songNode.getAttribute('data-index'))
-          
+      if (songNode || option) {
+        if (songNode) {
+          // console.log(songNode.dataset.index)
+          _this.currentIndex = Number(songNode.dataset.index);
+          _this.loadCurrentSong();
+          _this.render();
+          audio.play();
         }
-          //Xử lý khi click vào song
-      } 
-          //Xử lý khi click vào option
-      else{
-
-
+        if (option) {
+          console.log(option);
+        }
       }
-        
-
-    }
+      //Xử lý khi click vào option
+      else {
+      }
+    };
   },
   loadCurrentSong: function () {
     heading.textContent = this.currentSong.name;
     cdThumb.style.backgroundImage = `url('${this.currentSong.image}')`;
     audio.src = this.currentSong.path;
     audio.textContent = this.currentSong.name;
+  },
+  loadConfig:function(){
+    this.isRandom= this.config.isRandom
+    this.isRepeat= this.config.isRepeat
   },
   //  Chuyển bài
   nextSong: function () {
@@ -201,7 +220,7 @@ audio.play();
   preSong: function () {
     this.currentIndex--;
     if (this.currentIndex < 0) {
-      this.currentIndex = this.songs.length;
+      this.currentIndex = this.songs.length-1;
     }
     this.loadCurrentSong();
   },
@@ -209,18 +228,21 @@ audio.play();
     let newIndex;
     do {
       newIndex = Math.floor(Math.random() * this.songs.length);
-    } while (this.currentIndex ===  newIndex);
+    } while (this.currentIndex === newIndex);
     this.currentIndex = newIndex;
     this.loadCurrentSong();
   },
-  scrollToActiveSong:function(){
-    setTimeout(()=> $('.song.active').scrollIntoView({
-      behavior:'smooth',
-      block:'nearest'
-
-    }))
+  scrollToActiveSong: function () {
+    setTimeout(() =>
+      $(".song.active").scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      })
+    );
   },
   start: function () {
+    //Gán cấu hình từ config vào object đọc từ local storage --> config
+    this.loadConfig();
     //Định nghĩa các thuộc tính cho ob
     this.defineProperties();
 
@@ -231,6 +253,12 @@ audio.play();
     this.loadCurrentSong();
     //  Render danh sách bài hát
     this.render();
+
+    //  Hiển thị trang thái ban đầu của btn repaet and random
+    randomBtn.classList.toggle('active', this.isRandom);
+    repeatBtn.classList.toggle('active', this.isRepeat);
+    console.log(this.config)
+
   },
 };
 app.start();
